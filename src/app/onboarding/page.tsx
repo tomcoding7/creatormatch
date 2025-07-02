@@ -63,14 +63,51 @@ export default function Onboarding() {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const supabase = createClientComponentClient()
 
   // Check if user is logged in
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        console.log('No session found in onboarding, redirecting to login')
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError)
+          setError('Authentication error. Please try logging in again.')
+          router.push('/auth/login')
+          return
+        }
+
+        if (!session) {
+          console.log('No session found in onboarding, redirecting to login')
+          router.push('/auth/login')
+          return
+        }
+
+        // Verify creator profile exists
+        const { data: creator, error: creatorError } = await supabase
+          .from('creators')
+          .select('onboarding_completed')
+          .eq('auth_id', session.user.id)
+          .single()
+
+        if (creatorError || !creator) {
+          console.error('Creator profile error:', creatorError)
+          setError('Profile not found. Please complete signup first.')
+          router.push('/auth/signup')
+          return
+        }
+
+        if (creator.onboarding_completed) {
+          console.log('Onboarding already completed, redirecting to match')
+          router.push('/match')
+          return
+        }
+
+      } catch (error) {
+        console.error('Session check error:', error)
+        setError('Error checking login status')
         router.push('/auth/login')
       }
     }
@@ -90,11 +127,15 @@ export default function Onboarding() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
+    setError(null)
+    
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         throw new Error('Not authenticated')
       }
+
+      console.log('Submitting onboarding answers:', answers)
 
       const response = await fetch('/api/onboarding', {
         method: 'POST',
@@ -105,6 +146,7 @@ export default function Onboarding() {
       })
 
       const data = await response.json()
+      console.log('Onboarding response:', data)
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to save preferences')
@@ -115,13 +157,34 @@ export default function Onboarding() {
       // Add a small delay to ensure the toast is visible
       setTimeout(() => {
         router.push('/match')
-      }, 1000)
+      }, 1500)
     } catch (error) {
       console.error('Onboarding error:', error)
-      toast.error(error instanceof Error ? error.message : 'Error saving preferences')
+      const message = error instanceof Error ? error.message : 'Error saving preferences'
+      setError(message)
+      toast.error(message)
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-8">
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold text-red-600">Error</h2>
+            <p className="text-gray-600">{error}</p>
+            <button
+              onClick={() => router.push('/auth/login')}
+              className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            >
+              Return to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const progress = ((currentQuestion + 1) / questions.length) * 100
