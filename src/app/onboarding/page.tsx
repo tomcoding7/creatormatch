@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 interface Question {
   id: number
@@ -62,6 +63,19 @@ export default function Onboarding() {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const supabase = createClientComponentClient()
+
+  // Check if user is logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        console.log('No session found in onboarding, redirecting to login')
+        router.push('/auth/login')
+      }
+    }
+    checkSession()
+  }, [supabase, router])
 
   const handleAnswer = (answer: string) => {
     setAnswers(prev => ({
@@ -77,6 +91,11 @@ export default function Onboarding() {
   const handleSubmit = async () => {
     setIsSubmitting(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('Not authenticated')
+      }
+
       const response = await fetch('/api/onboarding', {
         method: 'POST',
         headers: {
@@ -85,13 +104,21 @@ export default function Onboarding() {
         body: JSON.stringify({ answers }),
       })
 
-      if (!response.ok) throw new Error('Failed to save preferences')
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save preferences')
+      }
 
       toast.success('Preferences saved successfully!')
-      router.push('/match')
+      
+      // Add a small delay to ensure the toast is visible
+      setTimeout(() => {
+        router.push('/match')
+      }, 1000)
     } catch (error) {
-      toast.error('Error saving preferences. Please try again.')
       console.error('Onboarding error:', error)
+      toast.error(error instanceof Error ? error.message : 'Error saving preferences')
     } finally {
       setIsSubmitting(false)
     }

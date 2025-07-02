@@ -582,6 +582,9 @@ video {
   white-space: nowrap;
   border-width: 0;
 }
+.visible {
+  visibility: visible;
+}
 .relative {
   position: relative;
 }
@@ -1124,6 +1127,10 @@ video {
 .text-purple-800 {
   --tw-text-opacity: 1;
   color: rgb(91 33 182 / var(--tw-text-opacity, 1));
+}
+.text-red-600 {
+  --tw-text-opacity: 1;
+  color: rgb(220 38 38 / var(--tw-text-opacity, 1));
 }
 .text-red-700 {
   --tw-text-opacity: 1;

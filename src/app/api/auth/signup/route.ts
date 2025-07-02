@@ -17,6 +17,31 @@ export async function POST(request: Request) {
       )
     }
 
+    // Check if a user with this email exists but is not confirmed
+    const { data: existingUsers } = await supabase.auth.admin.listUsers()
+    const existingUser = existingUsers?.users.find(u => u.email === requestData.email)
+    
+    if (existingUser) {
+      // If user exists but isn't confirmed, delete them and their profile
+      if (!existingUser.email_confirmed_at) {
+        console.log('Found unconfirmed user, cleaning up...')
+        
+        // Delete their creator profile if it exists
+        await supabase
+          .from('creators')
+          .delete()
+          .eq('auth_id', existingUser.id)
+        
+        // Delete the unconfirmed auth user
+        await supabase.auth.admin.deleteUser(existingUser.id)
+      } else {
+        return NextResponse.json(
+          { error: 'An account with this email already exists' },
+          { status: 400 }
+        )
+      }
+    }
+
     // First, create the auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: requestData.email,
@@ -84,6 +109,14 @@ export async function POST(request: Request) {
       console.error('Profile Error:', profileError)
       // If profile creation fails, we should clean up the auth user
       await supabase.auth.admin.deleteUser(authData.user.id)
+      
+      if (profileError.code === '23505') { // Unique constraint violation
+        return NextResponse.json(
+          { error: 'This email is already registered. Please check your email for the confirmation link or try logging in.' },
+          { status: 400 }
+        )
+      }
+      
       return NextResponse.json(
         { error: profileError.message },
         { status: 400 }
@@ -114,7 +147,7 @@ export async function POST(request: Request) {
     console.log('Profile created successfully')
 
     return NextResponse.json({
-      message: 'Successfully created profile',
+      message: 'Successfully created profile. Please check your email to confirm your account.',
       userId: authData.user.id
     })
 

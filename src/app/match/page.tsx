@@ -3,41 +3,76 @@
 import React, { useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Creator } from '@/types'
+import { useRouter } from 'next/navigation'
 
 export default function Match() {
   const [creators, setCreators] = useState<Creator[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const supabase = createClientComponentClient()
+  const router = useRouter()
 
   useEffect(() => {
     const fetchCreators = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) return
+        // Check session first
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        console.log('Session check:', session ? 'Logged in' : 'Not logged in')
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError)
+          setError('Error checking login status')
+          return
+        }
 
-        const { data: creators, error } = await supabase
+        if (!session) {
+          console.log('No session found, redirecting to login')
+          router.push('/auth/login')
+          return
+        }
+
+        // Fetch creators
+        const { data: creators, error: creatorsError } = await supabase
           .from('creators')
           .select('*')
           .neq('auth_id', session.user.id)
           .limit(10)
 
-        if (error) throw error
+        if (creatorsError) {
+          console.error('Error fetching creators:', creatorsError)
+          setError('Error fetching potential matches')
+          return
+        }
+
+        console.log('Fetched creators:', creators?.length || 0)
         setCreators(creators || [])
       } catch (error) {
-        console.error('Error fetching creators:', error)
+        console.error('Error in fetchCreators:', error)
+        setError('Unexpected error occurred')
       } finally {
         setLoading(false)
       }
     }
 
     fetchCreators()
-  }, [supabase])
+  }, [supabase, router])
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-gray-900">Loading potential matches...</h2>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-red-600">Error</h2>
+          <p className="mt-4 text-lg text-gray-600">{error}</p>
         </div>
       </div>
     )
@@ -110,7 +145,9 @@ export default function Match() {
         {creators.length === 0 && (
           <div className="text-center mt-12">
             <h3 className="text-lg font-medium text-gray-900">No matches found yet</h3>
-            <p className="mt-2 text-gray-600">Check back soon as more creators join the platform!</p>
+            <p className="mt-2 text-gray-600">
+              We're still looking for creators that match your profile! Try checking back later or adjusting your preferences.
+            </p>
           </div>
         )}
       </div>
