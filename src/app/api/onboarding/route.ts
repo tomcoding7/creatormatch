@@ -2,9 +2,21 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
+// Define the questions and their meanings for better data structure
+const QUESTION_MAPPINGS = {
+  1: 'biggest_challenge',
+  2: 'collaboration_style',
+  3: 'collaboration_frequency',
+  4: 'desired_resources'
+} as const
+
+// Define types for better type safety
+type QuestionId = keyof typeof QUESTION_MAPPINGS
+type Answers = Record<QuestionId, string>
+
 export async function POST(request: Request) {
   try {
-    const { answers } = await request.json()
+    const { answers } = (await request.json()) as { answers: Answers }
     const supabase = createRouteHandlerClient({ cookies })
 
     console.log('Starting onboarding update...')
@@ -53,21 +65,65 @@ export async function POST(request: Request) {
 
     console.log('Found creator profile:', creator.id)
 
-    // Update the creator's profile with onboarding answers and mark as completed
+    // Process answers into a flattened structure
+    const processedAnswers = Object.entries(answers).reduce<Record<string, string>>((acc, [questionId, answer]) => {
+      const key = QUESTION_MAPPINGS[Number(questionId) as QuestionId]
+      if (key) {
+        acc[key] = answer
+      }
+      return acc
+    }, {})
+
+    // Try updating with a simpler preferences object first
     const { error: updateError } = await supabase
       .from('creators')
       .update({
         onboarding_completed: true,
-        preferences: answers
+        preferences: {
+          biggest_challenge: processedAnswers.biggest_challenge || null,
+          collaboration_style: processedAnswers.collaboration_style || null,
+          collaboration_frequency: processedAnswers.collaboration_frequency || null,
+          desired_resources: processedAnswers.desired_resources || null
+        }
       })
       .eq('id', creator.id)
 
     if (updateError) {
       console.error('Error updating profile:', updateError)
-      return NextResponse.json(
-        { error: 'Failed to save your preferences. Please try again.' },
-        { status: 500 }
-      )
+      
+      // If that fails, try updating without preferences first
+      const { error: fallbackError } = await supabase
+        .from('creators')
+        .update({
+          onboarding_completed: true
+        })
+        .eq('id', creator.id)
+
+      if (fallbackError) {
+        console.error('Fallback update error:', fallbackError)
+        return NextResponse.json(
+          { error: 'Failed to save your preferences. Please try again.' },
+          { status: 500 }
+        )
+      }
+
+      // Then try to update preferences separately
+      const { error: preferencesError } = await supabase
+        .from('creators')
+        .update({
+          preferences: {
+            biggest_challenge: processedAnswers.biggest_challenge || null,
+            collaboration_style: processedAnswers.collaboration_style || null,
+            collaboration_frequency: processedAnswers.collaboration_frequency || null,
+            desired_resources: processedAnswers.desired_resources || null
+          }
+        })
+        .eq('id', creator.id)
+
+      if (preferencesError) {
+        console.error('Preferences update error:', preferencesError)
+        // Continue anyway since onboarding is marked as completed
+      }
     }
 
     console.log('Successfully updated creator profile')

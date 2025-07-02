@@ -122,6 +122,9 @@ export default function Onboarding() {
 
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(prev => prev + 1)
+    } else {
+      // Automatically submit when the last question is answered
+      handleSubmit()
     }
   }
 
@@ -152,12 +155,21 @@ export default function Onboarding() {
         throw new Error(data.error || 'Failed to save preferences')
       }
 
-      toast.success('Preferences saved successfully!')
+      // Show success message
+      toast.success('Preferences saved successfully!', {
+        duration: 2000, // Show for 2 seconds
+      })
       
-      // Add a small delay to ensure the toast is visible
-      setTimeout(() => {
+      // Check if the API response includes a redirect URL
+      if (data.redirect) {
+        // Wait for the toast to be visible before redirecting
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        router.push(data.redirect)
+      } else {
+        // Fallback to /match if no redirect URL is provided
+        await new Promise(resolve => setTimeout(resolve, 1000))
         router.push('/match')
-      }, 1500)
+      }
     } catch (error) {
       console.error('Onboarding error:', error)
       const message = error instanceof Error ? error.message : 'Error saving preferences'
@@ -168,6 +180,7 @@ export default function Onboarding() {
     }
   }
 
+  // Show error state
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -187,6 +200,21 @@ export default function Onboarding() {
     )
   }
 
+  // Show loading state
+  if (isSubmitting) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-8">
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900">Saving your preferences...</h2>
+            <p className="text-gray-600">Please wait while we update your profile.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Main quiz UI
   const progress = ((currentQuestion + 1) / questions.length) * 100
 
   return (

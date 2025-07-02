@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Creator } from '@/types'
 import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
 
 export default function Match() {
   const [creators, setCreators] = useState<Creator[]>([])
@@ -22,6 +23,7 @@ export default function Match() {
         if (sessionError) {
           console.error('Session error:', sessionError)
           setError('Error checking login status')
+          router.push('/auth/login')
           return
         }
 
@@ -31,12 +33,42 @@ export default function Match() {
           return
         }
 
-        // Fetch creators
+        // Check if onboarding is completed
+        const { data: profile, error: profileError } = await supabase
+          .from('creators')
+          .select('*') // Select all fields to debug
+          .eq('auth_id', session.user.id)
+          .single()
+
+        console.log('Current user profile:', profile)
+
+        if (profileError) {
+          console.error('Profile error:', profileError)
+          setError('Error loading your profile')
+          return
+        }
+
+        if (!profile) {
+          console.error('No profile found')
+          setError('Profile not found')
+          return
+        }
+
+        if (!profile.onboarding_completed) {
+          console.log('Onboarding not completed, redirecting')
+          router.push('/onboarding')
+          return
+        }
+
+        // Log the current user's preferences
+        console.log('Current user preferences:', profile.preferences)
+
+        // Fetch creators with more detailed logging
         const { data: creators, error: creatorsError } = await supabase
           .from('creators')
           .select('*')
           .neq('auth_id', session.user.id)
-          .limit(10)
+          .eq('onboarding_completed', true)
 
         if (creatorsError) {
           console.error('Error fetching creators:', creatorsError)
@@ -44,7 +76,16 @@ export default function Match() {
           return
         }
 
-        console.log('Fetched creators:', creators?.length || 0)
+        // Log fetched creators for debugging
+        console.log('All fetched creators:', creators)
+        
+        if (!creators || creators.length === 0) {
+          console.log('No other creators found who completed onboarding')
+          toast('No matches found yet. Check back later!', {
+            icon: 'ℹ️'
+          })
+        }
+
         setCreators(creators || [])
       } catch (error) {
         console.error('Error in fetchCreators:', error)
@@ -62,6 +103,7 @@ export default function Match() {
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-gray-900">Loading potential matches...</h2>
+          <p className="mt-4 text-lg text-gray-600">Please wait while we find your perfect matches!</p>
         </div>
       </div>
     )
@@ -73,6 +115,12 @@ export default function Match() {
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-red-600">Error</h2>
           <p className="mt-4 text-lg text-gray-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-6 inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     )
@@ -96,9 +144,9 @@ export default function Match() {
             >
               <div className="p-6">
                 <div className="flex items-center space-x-4">
-                  {creator.avatarUrl ? (
+                  {creator.avatar_url ? (
                     <img
-                      src={creator.avatarUrl}
+                      src={creator.avatar_url}
                       alt={creator.name}
                       className="h-12 w-12 rounded-full"
                     />
@@ -111,13 +159,13 @@ export default function Match() {
                   )}
                   <div>
                     <h3 className="text-lg font-medium text-gray-900">{creator.name}</h3>
-                    <p className="text-sm text-gray-500">{creator.skillLevel}</p>
+                    <p className="text-sm text-gray-500">{creator.skill_level}</p>
                   </div>
                 </div>
 
                 <div className="mt-4">
                   <div className="flex flex-wrap gap-2">
-                    {creator.contentNiches.map((niche) => (
+                    {creator.content_niches?.map((niche) => (
                       <span
                         key={niche}
                         className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
@@ -133,6 +181,7 @@ export default function Match() {
                 <div className="mt-6">
                   <button
                     className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                    onClick={() => router.push(`/chat/${creator.id}`)}
                   >
                     Connect
                   </button>
