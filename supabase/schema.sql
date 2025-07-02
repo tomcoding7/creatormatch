@@ -100,9 +100,9 @@ create policy "Enable read access for all users"
   on creators for select
   using (true);
 
-create policy "Enable insert access for authenticated users"
+create policy "Enable insert for signup"
   on creators for insert
-  with check (auth.role() = 'authenticated');
+  with check (auth_id = auth.uid() or auth.uid() is null);
 
 create policy "Enable update for users based on auth_id"
   on creators for update

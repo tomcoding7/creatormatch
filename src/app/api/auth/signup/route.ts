@@ -30,6 +30,16 @@ export async function POST(request: Request) {
 
     if (authError) {
       console.error('Auth Error:', authError)
+      // Handle rate limiting error specifically
+      if (authError.status === 429) {
+        return NextResponse.json(
+          { 
+            error: 'Too many signup attempts. Please wait a minute before trying again.',
+            isRateLimit: true
+          },
+          { status: 429 }
+        )
+      }
       return NextResponse.json(
         { error: authError.message },
         { status: 400 }
@@ -74,6 +84,8 @@ export async function POST(request: Request) {
 
     if (profileError) {
       console.error('Profile Error:', profileError)
+      // If profile creation fails, we should clean up the auth user
+      await supabase.auth.admin.deleteUser(authData.user.id)
       return NextResponse.json(
         { error: profileError.message },
         { status: 400 }

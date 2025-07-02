@@ -46,6 +46,23 @@ export default function SignUp() {
         bio: formData.get('bio'),
       }
 
+      // Validate required fields
+      if (!data.contentNiches.length) {
+        throw new Error('Please select at least one content niche')
+      }
+      if (!data.platforms.length) {
+        throw new Error('Please select at least one platform')
+      }
+      if (!data.goals.length) {
+        throw new Error('Please select at least one goal')
+      }
+      if (!data.vibes.length) {
+        throw new Error('Please select at least one vibe')
+      }
+      if (!data.languages?.length) {
+        throw new Error('Please enter at least one language')
+      }
+
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
@@ -57,6 +74,11 @@ export default function SignUp() {
       const result = await response.json()
 
       if (!response.ok) {
+        // Handle rate limiting specifically
+        if (response.status === 429) {
+          throw new Error('Too many signup attempts. Please wait a minute before trying again.')
+        }
+        // Handle other errors
         throw new Error(result.error || 'Failed to create account')
       }
 
