@@ -1,6 +1,12 @@
 -- Enable necessary extensions
 create extension if not exists "uuid-ossp";
 
+-- Enable auth schema for RLS policies
+create schema if not exists auth;
+
+-- Disable RLS first
+alter table creators disable row level security;
+
 -- Create enum types
 create type content_niche as enum (
   'Gaming',
@@ -80,6 +86,32 @@ create table creators (
   constraint creators_auth_id_key unique (auth_id)
 );
 
+-- Enable RLS
+alter table creators enable row level security;
+
+-- Drop existing policies if they exist
+drop policy if exists "Users can view all creators" on creators;
+drop policy if exists "Users can create their own profile" on creators;
+drop policy if exists "Users can update their own profile" on creators;
+drop policy if exists "Users can delete their own profile" on creators;
+
+-- Create more permissive policies for testing
+create policy "Enable read access for all users"
+  on creators for select
+  using (true);
+
+create policy "Enable insert access for authenticated users"
+  on creators for insert
+  with check (auth.role() = 'authenticated');
+
+create policy "Enable update for users based on auth_id"
+  on creators for update
+  using (auth.uid() = auth_id);
+
+create policy "Enable delete for users based on auth_id"
+  on creators for delete
+  using (auth.uid() = auth_id);
+
 -- Create matches table
 create table matches (
   id uuid primary key default uuid_generate_v4(),
@@ -153,26 +185,6 @@ create trigger update_collab_suggestions_updated_at
   before update on collab_suggestions
   for each row
   execute function update_updated_at_column();
-
--- Create RLS policies
-alter table creators enable row level security;
-alter table matches enable row level security;
-alter table messages enable row level security;
-alter table collab_suggestions enable row level security;
-alter table feedback enable row level security;
-
--- Creators policies
-create policy "Users can view all creators"
-  on creators for select
-  using (true);
-
-create policy "Users can update their own profile"
-  on creators for update
-  using (auth.uid() = auth_id);
-
-create policy "Users can delete their own profile"
-  on creators for delete
-  using (auth.uid() = auth_id);
 
 -- Matches policies
 create policy "Users can view their matches"

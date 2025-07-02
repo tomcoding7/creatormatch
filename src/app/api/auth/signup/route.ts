@@ -7,6 +7,8 @@ export async function POST(request: Request) {
     const requestData = await request.json()
     const supabase = createRouteHandlerClient({ cookies })
 
+    console.log('Starting signup process...')
+
     // Validate required fields
     if (!requestData.email || !requestData.password) {
       return NextResponse.json(
@@ -35,30 +37,40 @@ export async function POST(request: Request) {
     }
 
     if (!authData.user) {
+      console.error('No user data returned')
       return NextResponse.json(
         { error: 'No user data returned' },
         { status: 400 }
       )
     }
 
+    console.log('Auth user created:', authData.user.id)
+
+    // Wait a moment for the auth to propagate
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
     // Then, create the creator profile
+    const creatorData = {
+      auth_id: authData.user.id,
+      name: requestData.name,
+      age: requestData.age,
+      gender: requestData.gender,
+      location: requestData.location || null,
+      content_niches: requestData.contentNiches || [],
+      skill_level: requestData.skillLevel,
+      platforms: requestData.platforms || [],
+      goals: requestData.goals || [],
+      timezone: requestData.timezone,
+      languages: requestData.languages || [],
+      vibes: requestData.vibes || [],
+      bio: requestData.bio || '',
+    }
+
+    console.log('Creating creator profile:', creatorData)
+
     const { error: profileError } = await supabase
       .from('creators')
-      .insert({
-        auth_id: authData.user.id,
-        name: requestData.name,
-        age: requestData.age,
-        gender: requestData.gender,
-        location: requestData.location || null,
-        content_niches: requestData.contentNiches || [],
-        skill_level: requestData.skillLevel,
-        platforms: requestData.platforms || [],
-        goals: requestData.goals || [],
-        timezone: requestData.timezone,
-        languages: requestData.languages || [],
-        vibes: requestData.vibes || [],
-        bio: requestData.bio || '',
-      })
+      .insert([creatorData])
 
     if (profileError) {
       console.error('Profile Error:', profileError)
@@ -67,6 +79,8 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
+
+    console.log('Profile created successfully')
 
     return NextResponse.json({
       message: 'Successfully created profile',
