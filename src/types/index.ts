@@ -20,6 +20,16 @@ export type Goal = 'Collaboration' | 'Friendship' | 'Learning' | 'Business';
 
 export type Vibe = 'Funny' | 'Educational' | 'Chill' | 'Energetic' | 'Professional' | 'Creative';
 
+export type ResourceType = 'Mentorship' | 'Equipment' | 'Networking' | 'Education' | 'Accountability';
+
+export interface SocialLinks {
+  youtube?: string;
+  tiktok?: string;
+  instagram?: string;
+  twitter?: string;
+  discord?: string;
+}
+
 export interface Creator {
   id: string;
   name: string;
@@ -37,6 +47,8 @@ export interface Creator {
   avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
+  desiredResources?: ResourceType[];
+  socialLinks?: SocialLinks;
 }
 
 export interface Match {
@@ -110,6 +122,14 @@ export const VIBES = [
   'Energetic',
   'Professional',
   'Creative'
+] as const;
+
+export const RESOURCES = [
+  'Mentorship',
+  'Equipment',
+  'Networking',
+  'Education',
+  'Accountability'
 ] as const;
 
 export const TIMEZONES = [

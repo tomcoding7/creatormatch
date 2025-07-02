@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Update the creator's profile with onboarding answers
+    // Update the creator's profile with onboarding answers and mark as completed
     const { error: updateError } = await supabase
       .from('creators')
       .update({
@@ -26,11 +26,18 @@ export async function POST(request: Request) {
       })
       .eq('auth_id', session.user.id)
 
-    if (updateError) throw updateError
+    if (updateError) {
+      console.error('Error updating profile:', updateError)
+      throw updateError
+    }
 
-    return NextResponse.json({ message: 'Preferences saved successfully' })
+    return NextResponse.json({ 
+      message: 'Preferences saved successfully',
+      redirect: '/match' // Add redirect URL to response
+    })
 
   } catch (error) {
+    console.error('Onboarding error:', error)
     return NextResponse.json(
       { error: 'Error saving preferences' },
       { status: 500 }

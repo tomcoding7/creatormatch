@@ -9,12 +9,14 @@ import {
   SkillLevel, 
   Goal, 
   Vibe,
+  ResourceType,
   CONTENT_NICHES,
   PLATFORMS,
   SKILL_LEVELS,
   GOALS,
   VIBES,
-  TIMEZONES
+  TIMEZONES,
+  RESOURCES
 } from '@/types'
 
 export default function SignUp() {
@@ -44,6 +46,12 @@ export default function SignUp() {
         languages: formData.get('languages')?.toString().split(',').map(l => l.trim()),
         vibes: formData.getAll('vibes'),
         bio: formData.get('bio'),
+        desiredResources: formData.getAll('desiredResources'),
+        youtube: formData.get('youtube'),
+        tiktok: formData.get('tiktok'),
+        instagram: formData.get('instagram'),
+        twitter: formData.get('twitter'),
+        discord: formData.get('discord'),
       }
 
       // Validate required fields
@@ -327,6 +335,101 @@ export default function SignUp() {
                 placeholder="Tell potential collaborators about yourself..."
                 required
               />
+            </div>
+          </div>
+
+          {/* Social Links Section */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold text-gray-900">Social Links</h3>
+            <p className="text-sm text-gray-600">Add your social media handles (optional)</p>
+            
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="youtube" className="block text-sm font-medium text-gray-700">
+                  YouTube
+                </label>
+                <div className="mt-1 flex rounded-md shadow-sm">
+                  <span className="inline-flex items-center rounded-l-md border border-r-0 border-gray-300 bg-gray-50 px-3 text-gray-500 sm:text-sm">
+                    youtube.com/
+                  </span>
+                  <input
+                    type="text"
+                    name="youtube"
+                    id="youtube"
+                    className="block w-full min-w-0 flex-1 rounded-none rounded-r-md border-gray-300 focus:border-purple-500 focus:ring-purple-500 sm:text-sm"
+                    placeholder="channel"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="tiktok" className="block text-sm font-medium text-gray-700">
+                  TikTok
+                </label>
+                <div className="mt-1 flex rounded-md shadow-sm">
+                  <span className="inline-flex items-center rounded-l-md border border-r-0 border-gray-300 bg-gray-50 px-3 text-gray-500 sm:text-sm">
+                    @
+                  </span>
+                  <input
+                    type="text"
+                    name="tiktok"
+                    id="tiktok"
+                    className="block w-full min-w-0 flex-1 rounded-none rounded-r-md border-gray-300 focus:border-purple-500 focus:ring-purple-500 sm:text-sm"
+                    placeholder="username"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="instagram" className="block text-sm font-medium text-gray-700">
+                  Instagram
+                </label>
+                <div className="mt-1 flex rounded-md shadow-sm">
+                  <span className="inline-flex items-center rounded-l-md border border-r-0 border-gray-300 bg-gray-50 px-3 text-gray-500 sm:text-sm">
+                    @
+                  </span>
+                  <input
+                    type="text"
+                    name="instagram"
+                    id="instagram"
+                    className="block w-full min-w-0 flex-1 rounded-none rounded-r-md border-gray-300 focus:border-purple-500 focus:ring-purple-500 sm:text-sm"
+                    placeholder="username"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="twitter" className="block text-sm font-medium text-gray-700">
+                  Twitter/X
+                </label>
+                <div className="mt-1 flex rounded-md shadow-sm">
+                  <span className="inline-flex items-center rounded-l-md border border-r-0 border-gray-300 bg-gray-50 px-3 text-gray-500 sm:text-sm">
+                    @
+                  </span>
+                  <input
+                    type="text"
+                    name="twitter"
+                    id="twitter"
+                    className="block w-full min-w-0 flex-1 rounded-none rounded-r-md border-gray-300 focus:border-purple-500 focus:ring-purple-500 sm:text-sm"
+                    placeholder="username"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="discord" className="block text-sm font-medium text-gray-700">
+                  Discord
+                </label>
+                <div className="mt-1 flex rounded-md shadow-sm">
+                  <input
+                    type="text"
+                    name="discord"
+                    id="discord"
+                    className="block w-full rounded-md border-gray-300 focus:border-purple-500 focus:ring-purple-500 sm:text-sm"
+                    placeholder="username#0000"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 

@@ -56,9 +56,6 @@ export async function POST(request: Request) {
 
     console.log('Auth user created:', authData.user.id)
 
-    // Wait a moment for the auth to propagate
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
     // Then, create the creator profile
     const creatorData = {
       auth_id: authData.user.id,
@@ -74,6 +71,7 @@ export async function POST(request: Request) {
       languages: requestData.languages || [],
       vibes: requestData.vibes || [],
       bio: requestData.bio || '',
+      // Let the database handle the default social_links structure
     }
 
     console.log('Creating creator profile:', creatorData)
@@ -90,6 +88,27 @@ export async function POST(request: Request) {
         { error: profileError.message },
         { status: 400 }
       )
+    }
+
+    // After creating the profile, update social links if provided
+    if (requestData.youtube || requestData.tiktok || requestData.instagram || requestData.twitter || requestData.discord) {
+      const socialLinks = {
+        youtube: requestData.youtube ? `https://youtube.com/${requestData.youtube}` : null,
+        tiktok: requestData.tiktok ? `https://tiktok.com/@${requestData.tiktok}` : null,
+        instagram: requestData.instagram ? `https://instagram.com/${requestData.instagram}` : null,
+        twitter: requestData.twitter ? `https://twitter.com/${requestData.twitter}` : null,
+        discord: requestData.discord || null
+      }
+
+      const { error: updateError } = await supabase
+        .from('creators')
+        .update({ social_links: socialLinks })
+        .eq('auth_id', authData.user.id)
+
+      if (updateError) {
+        console.error('Error updating social links:', updateError)
+        // Don't fail the signup if social links update fails
+      }
     }
 
     console.log('Profile created successfully')

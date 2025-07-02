@@ -83,6 +83,13 @@ create table creators (
   preferences jsonb,
   last_active timestamp with time zone,
   is_online boolean default false,
+  social_links jsonb default '{
+    "youtube": null,
+    "tiktok": null,
+    "instagram": null,
+    "twitter": null,
+    "discord": null
+  }',
   constraint creators_auth_id_key unique (auth_id)
 );
 
