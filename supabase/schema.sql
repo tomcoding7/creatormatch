@@ -73,6 +73,10 @@ create table creators (
   avatar_url text,
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now(),
+  onboarding_completed boolean default false,
+  preferences jsonb,
+  last_active timestamp with time zone,
+  is_online boolean default false,
   constraint creators_auth_id_key unique (auth_id)
 );
 
@@ -110,6 +114,21 @@ create table collab_suggestions (
   updated_at timestamp with time zone default now()
 );
 
+-- Create feedback table
+create table if not exists feedback (
+  id uuid primary key default uuid_generate_v4(),
+  reviewer_id uuid references creators(id) on delete cascade,
+  reviewed_id uuid references creators(id) on delete cascade,
+  match_id uuid references matches(id) on delete cascade,
+  rating integer check (rating >= 1 and rating <= 5),
+  vibed_well boolean,
+  good_editor boolean,
+  reliable boolean,
+  feedback_text text,
+  created_at timestamp with time zone default now(),
+  constraint feedback_unique_pair unique (reviewer_id, reviewed_id, match_id)
+);
+
 -- Create updated_at trigger function
 create or replace function update_updated_at_column()
 returns trigger as $$
@@ -140,6 +159,7 @@ alter table creators enable row level security;
 alter table matches enable row level security;
 alter table messages enable row level security;
 alter table collab_suggestions enable row level security;
+alter table feedback enable row level security;
 
 -- Creators policies
 create policy "Users can view all creators"
@@ -198,4 +218,60 @@ create policy "Users can send messages in their matches"
 -- Collab suggestions policies
 create policy "Everyone can view collab suggestions"
   on collab_suggestions for select
-  using (true); 
+  using (true);
+
+-- Feedback policies
+create policy "Users can view feedback about themselves"
+  on feedback for select
+  using (
+    auth.uid() in (
+      select auth_id from creators
+      where id = reviewed_id
+    )
+  );
+
+create policy "Users can create feedback for their matches"
+  on feedback for insert
+  with check (
+    auth.uid() in (
+      select c.auth_id from creators c
+      join matches m on c.id in (m.creator_id_1, m.creator_id_2)
+      where m.id = match_id
+      and m.status = 'accepted'
+    )
+  );
+
+-- Function to update online status
+create or replace function update_online_status()
+returns trigger as $$
+begin
+  update creators
+  set is_online = true,
+      last_active = now()
+  where auth_id = auth.uid();
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger to update online status on any activity
+create trigger update_creator_online_status
+  after insert or update on creators
+  for each row
+  execute function update_online_status();
+
+-- Function to mark users as offline after inactivity
+create or replace function mark_inactive_users_offline()
+returns void as $$
+begin
+  update creators
+  set is_online = false
+  where last_active < now() - interval '5 minutes';
+end;
+$$ language plpgsql security definer;
+
+-- Create a cron job to run every minute (requires pg_cron extension)
+select cron.schedule(
+  'mark_inactive_users',
+  '* * * * *',
+  'select mark_inactive_users_offline()'
+); 

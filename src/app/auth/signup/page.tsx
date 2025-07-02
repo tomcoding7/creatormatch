@@ -1,7 +1,77 @@
-import React from 'react'
-import { ContentNiche, Platform, SkillLevel, Goal, Vibe } from '@/types'
+'use client'
+
+import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
+import { 
+  ContentNiche, 
+  Platform, 
+  SkillLevel, 
+  Goal, 
+  Vibe,
+  CONTENT_NICHES,
+  PLATFORMS,
+  SKILL_LEVELS,
+  GOALS,
+  VIBES,
+  TIMEZONES
+} from '@/types'
 
 export default function SignUp() {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const formData = new FormData(e.currentTarget)
+      const data = {
+        email: formData.get('email'),
+        password: formData.get('password'),
+        name: formData.get('name'),
+        age: parseInt(formData.get('age') as string),
+        gender: formData.get('gender'),
+        location: formData.get('location'),
+        contentNiches: formData.getAll('contentNiches'),
+        skillLevel: formData.get('skillLevel'),
+        platforms: formData.getAll('platforms'),
+        goals: formData.getAll('goals'),
+        timezone: formData.get('timezone'),
+        languages: formData.get('languages')?.toString().split(',').map(l => l.trim()),
+        vibes: formData.getAll('vibes'),
+        bio: formData.get('bio'),
+      }
+
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create account')
+      }
+
+      toast.success('Account created successfully!')
+      router.push('/onboarding')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error creating account. Please try again.'
+      setError(message)
+      toast.error(message)
+      console.error('Signup error:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-8">
@@ -10,7 +80,41 @@ export default function SignUp() {
           <p className="mt-2 text-gray-600">Join our community of content creators and find your perfect match!</p>
         </div>
 
-        <form className="space-y-6" action="#" method="POST">
+        {error && (
+          <div className="mb-4 p-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
+            {error}
+          </div>
+        )}
+
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          {/* Authentication Information */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold text-gray-900">Account Information</h3>
+            
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+              <input
+                type="email"
+                name="email"
+                id="email"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+              <input
+                type="password"
+                name="password"
+                id="password"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                required
+                minLength={6}
+              />
+            </div>
+          </div>
+
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-xl font-semibold text-gray-900">Basic Information</h3>
@@ -77,7 +181,7 @@ export default function SignUp() {
             <div>
               <label className="block text-sm font-medium text-gray-700">Content Niches (Select all that apply)</label>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {Object.values(ContentNiche).map((niche) => (
+                {CONTENT_NICHES.map((niche) => (
                   <label key={niche} className="inline-flex items-center">
                     <input
                       type="checkbox"
@@ -100,7 +204,7 @@ export default function SignUp() {
                 required
               >
                 <option value="">Select skill level</option>
-                {Object.values(SkillLevel).map((level) => (
+                {SKILL_LEVELS.map((level) => (
                   <option key={level} value={level}>{level}</option>
                 ))}
               </select>
@@ -109,7 +213,7 @@ export default function SignUp() {
             <div>
               <label className="block text-sm font-medium text-gray-700">Platforms (Select all that apply)</label>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {Object.values(Platform).map((platform) => (
+                {PLATFORMS.map((platform) => (
                   <label key={platform} className="inline-flex items-center">
                     <input
                       type="checkbox"
@@ -131,7 +235,7 @@ export default function SignUp() {
             <div>
               <label className="block text-sm font-medium text-gray-700">Goals (Select all that apply)</label>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {Object.values(Goal).map((goal) => (
+                {GOALS.map((goal) => (
                   <label key={goal} className="inline-flex items-center">
                     <input
                       type="checkbox"
@@ -154,7 +258,11 @@ export default function SignUp() {
                 required
               >
                 <option value="">Select timezone</option>
-                {/* Add timezone options dynamically */}
+                {TIMEZONES.map((timezone) => (
+                  <option key={timezone} value={timezone}>
+                    {timezone}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -173,7 +281,7 @@ export default function SignUp() {
             <div>
               <label className="block text-sm font-medium text-gray-700">Vibe (Select all that apply)</label>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {Object.values(Vibe).map((vibe) => (
+                {VIBES.map((vibe) => (
                   <label key={vibe} className="inline-flex items-center">
                     <input
                       type="checkbox"
@@ -203,9 +311,10 @@ export default function SignUp() {
           <div>
             <button
               type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+              disabled={isLoading}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Create Profile
+              {isLoading ? 'Creating Profile...' : 'Create Profile'}
             </button>
           </div>
         </form>
