@@ -1,6 +1,9 @@
 import React from 'react'
 import Link from 'next/link'
 
+// Define the type for the icon component props
+type IconProps = React.SVGProps<SVGSVGElement>
+
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
@@ -61,9 +64,9 @@ const features = [
   {
     name: 'Smart Matching',
     description: 'Our algorithm matches you with creators based on shared interests, goals, and content style.',
-    icon: function UserGroupIcon() {
+    icon: function UserGroupIcon(props: IconProps) {
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
         </svg>
       )
@@ -72,9 +75,9 @@ const features = [
   {
     name: 'Collab Ideas',
     description: 'Get personalized suggestions for collaboration ideas based on your combined niches and current trends.',
-    icon: function LightBulbIcon() {
+    icon: function LightBulbIcon(props: IconProps) {
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
         </svg>
       )
@@ -83,9 +86,9 @@ const features = [
   {
     name: 'Easy Connect',
     description: 'Once matched, easily connect with your potential collaborator through our built-in messaging system.',
-    icon: function ChatBubbleIcon() {
+    icon: function ChatBubbleIcon(props: IconProps) {
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z" />
         </svg>
       )
