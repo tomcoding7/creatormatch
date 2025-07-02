@@ -15,7 +15,7 @@ export default function ChatInterface({ params }: { params: { matchId: string } 
       id: '2',
       matchId: params.matchId,
       senderId: 'user2',
-      content: 'Thanks! That sounds great! I've been wanting to create more web dev content. What specific topics did you have in mind?',
+      content: 'Thanks! That sounds great! I\'ve been wanting to create more web dev content. What specific topics did you have in mind?',
       createdAt: '2024-01-01T10:05:00Z',
     },
   ]
